@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -11,67 +12,86 @@ st.set_page_config(
     layout="wide"
 )
 
-# Database connection
+# Database connection - support both local and cloud
 def get_connection():
-    return psycopg2.connect(
-        host="localhost",
-        port=5432,
-        user="lw",
-        password="",
-        dbname="nagoya_properties"
-    )
+    # Try environment variables first (for Streamlit Cloud)
+    if 'DB_HOST' in os.environ:
+        return psycopg2.connect(
+            host=os.environ.get('DB_HOST'),
+            port=int(os.environ.get('DB_PORT', 5432)),
+            user=os.environ.get('DB_USER'),
+            password=os.environ.get('DB_PASSWORD'),
+            dbname=os.environ.get('DB_NAME')
+        )
+    # Fallback to local database
+    else:
+        return psycopg2.connect(
+            host="localhost",
+            port=5432,
+            user="lw",
+            password="",
+            dbname="nagoya_properties"
+        )
 
 # Load data
 @st.cache_data(ttl=60)
 def load_data():
-    conn = get_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
-    cur.execute("""
-        SELECT
-            id,
-            source,
-            property_id,
-            listing_type,
-            title,
-            price,
-            price_display,
-            address,
-            area,
-            floor,
-            layout,
-            building_type,
-            construction_year,
-            station_name,
-            walking_minutes,
-            detail_url,
-            created_at
-        FROM properties
-        ORDER BY created_at DESC
-    """)
-    data = cur.fetchall()
-    cur.close()
-    conn.close()
-    return pd.DataFrame(data)
+        cur.execute("""
+            SELECT
+                id,
+                source,
+                property_id,
+                listing_type,
+                title,
+                price,
+                price_display,
+                address,
+                area,
+                floor,
+                layout,
+                building_type,
+                construction_year,
+                station_name,
+                walking_minutes,
+                detail_url,
+                created_at
+            FROM properties
+            ORDER BY created_at DESC
+        """)
+        data = cur.fetchall()
+        cur.close()
+        conn.close()
+        return pd.DataFrame(data)
+    except Exception as e:
+        st.error(f"数据库连接失败: {e}")
+        return pd.DataFrame()
 
 def get_stats():
-    conn = get_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
-    cur.execute("""
-        SELECT
-            source,
-            COUNT(*) as count,
-            COUNT(CASE WHEN title != '' AND address != '' AND area > 0 THEN 1 END) as complete_count,
-            AVG(CASE WHEN area > 0 THEN area END) as avg_area,
-            AVG(CASE WHEN price > 0 THEN price END) as avg_price
-        FROM properties
-        GROUP BY source
-    """)
-    stats = cur.fetchall()
-    cur.close()
-    conn.close()
-    return pd.DataFrame(stats)
+        cur.execute("""
+            SELECT
+                source,
+                COUNT(*) as count,
+                COUNT(CASE WHEN title != '' AND address != '' AND area > 0 THEN 1 END) as complete_count,
+                AVG(CASE WHEN area > 0 THEN area END) as avg_area,
+                AVG(CASE WHEN price > 0 THEN price END) as avg_price
+            FROM properties
+            GROUP BY source
+        """)
+        stats = cur.fetchall()
+        cur.close()
+        conn.close()
+        return pd.DataFrame(stats)
+    except Exception as e:
+        st.error(f"统计数据获取失败: {e}")
+        return pd.DataFrame()
 
 # Main app
 def main():
@@ -81,6 +101,30 @@ def main():
     with st.spinner("加载数据..."):
         df = load_data()
         stats = get_stats()
+
+    if df.empty:
+        st.error("""
+        ### 无法连接到数据库
+
+        **本地运行:**
+        ```bash
+        streamlit run streamlit_app.py
+        ```
+
+        **部署到Streamlit Cloud:**
+        需要配置云端数据库连接信息，请设置以下Secrets:
+        - `DB_HOST`
+        - `DB_PORT`
+        - `DB_USER`
+        - `DB_PASSWORD`
+        - `DB_NAME`
+
+        推荐使用免费云端数据库:
+        - [Supabase](https://supabase.com) - 免费500MB
+        - [Neon](https://neon.tech) - 免费无限制
+        - [Railway](https://railway.app) - 免费$5/月额度
+        """)
+        return
 
     # Sidebar filters
     st.sidebar.header("筛选条件")
