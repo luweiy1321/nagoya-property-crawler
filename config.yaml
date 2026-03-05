@@ -1,0 +1,68 @@
+# 日本名古屋房产爬虫系统配置文件
+
+# 爬虫配置
+crawler:
+  # 是否使用无头模式（不显示浏览器窗口）
+  headless: true
+
+  # 单个任务超时时间
+  timeout: 600s
+
+  # 页面加载后等待时间（等待 JS 渲染）
+  wait_after_load: 3s
+
+  # User-Agent
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+  # 最大并发数
+  max_concurrent: 2
+
+  # 失败重试次数
+  retry_times: 3
+
+  # 禁用图片加载（设置为false以获取房源图片）
+  disable_images: false
+
+# 数据库配置
+database:
+  host: "localhost"
+  port: 5432
+  user: "lw"
+  password: ""
+  dbname: "nagoya_properties"
+  sslmode: "disable"
+
+# Web服务器配置
+server:
+  port: 8080
+  static_dir: "./static"
+
+# 数据源配置
+sources:
+  suumo:
+    enabled: true
+    base_url: "https://suumo.jp"
+    rent_url: "https://suumo.jp/chintai/aichi/nc_nagoya/"
+    sale_url: "https://suumo.jp/ms/chuko/aichi/nc_nagoya/"
+    max_pages: 5
+
+  homes:
+    enabled: true
+    base_url: "https://www.homes.co.jp"
+    rent_url: "https://www.homes.co.jp/chintai/aichi/nagoya/list/"
+    sale_url: "https://www.homes.co.jp/chuko/aichi/nagoya/list/"
+    max_pages: 5
+
+  athome:
+    enabled: true
+    base_url: "https://www.at-home.co.jp"
+    rent_url: "https://www.at-home.co.jp/chintai/aichi/nagoya-city/list/"
+    sale_url: "https://www.at-home.co.jp/chuko/aichi/nagoya-city/list/"
+    max_pages: 5
+
+# 调度器配置（可选，用于定时任务）
+scheduler:
+  # Cron表达式：每2天凌晨执行
+  # 格式：秒 分 时 日 月 周
+  cron: "0 0 0 */2 * *"
+  enabled: true

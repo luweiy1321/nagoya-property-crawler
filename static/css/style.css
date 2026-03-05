@@ -1,0 +1,230 @@
+/* 名古屋房产爬虫系统 - 自定义样式 */
+
+/* 全局样式 */
+:root {
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+    --light-color: #f8f9fa;
+    --dark-color: #212529;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* 导航栏 */
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+/* 统计卡片 */
+.stat-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border-left: 4px solid var(--primary-color);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 房产卡片 */
+.property-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    overflow: hidden;
+}
+
+.property-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12) !important;
+}
+
+.property-image {
+    width: 120px;
+    height: 120px;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.property-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.property-image.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+/* 价格显示 */
+.text-primary.fw-bold {
+    font-size: 1.1rem;
+}
+
+/* 筛选表单 */
+.filter-section {
+    position: sticky;
+    top: 20px;
+}
+
+/* 分页 */
+.pagination {
+    margin-top: 2rem;
+}
+
+/* 徽章样式 */
+.badge {
+    font-weight: 500;
+}
+
+/* 卡片悬停效果 */
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.border-2 {
+    border-width: 2px !important;
+}
+
+/* 图片占位符 */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* 详情页图片画廊 */
+.card-body .row .col-md-4 img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    transition: transform 0.2s ease;
+}
+
+.card-body .row .col-md-4 img:hover {
+    transform: scale(1.05);
+}
+
+/* 链接样式 */
+a.text-decoration-none:hover {
+    text-decoration: underline !important;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .property-image {
+        width: 100%;
+        height: 200px;
+        margin-bottom: 1rem;
+    }
+
+    .property-card .card-body .d-flex {
+        flex-direction: column;
+    }
+}
+
+/* 加载动画 */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* 提示框 */
+.alert {
+    border-radius: 8px;
+}
+
+/* 按钮样式 */
+.btn {
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+/* 表单控件 */
+.form-select,
+.form-control {
+    border-radius: 6px;
+}
+
+.form-select:focus,
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* 页脚 */
+footer {
+    margin-top: auto;
+}
+
+/* API 文档区域 */
+.input-group-text {
+    font-family: monospace;
+    background-color: #f8f9fa;
+}
+
+/* 数据统计 */
+.display-6 {
+    font-size: 2.5rem;
+}
+
+/* 面包屑导航 */
+.breadcrumb-item a {
+    text-decoration: none;
+    color: var(--primary-color);
+}
+
+.breadcrumb-item a:hover {
+    text-decoration: underline;
+}
+
+/* 卡片标题 */
+.card-title {
+    font-weight: 600;
+}
+
+/* 小图标 */
+.bi {
+    vertical-align: -0.125em;
+}
+
+/* 深色模式支持（可选） */
+@media (prefers-color-scheme: dark) {
+    /* 可以在这里添加深色模式样式 */
+}
+
+/* 打印样式 */
+@media print {
+    .navbar,
+    .breadcrumb,
+    .btn,
+    footer {
+        display: none !important;
+    }
+
+    .property-card {
+        break-inside: avoid;
+    }
+}

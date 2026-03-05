@@ -1,0 +1,264 @@
+{{define "detail.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "content"}}
+<div class="bg-light py-3 mb-4">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/">首页</a></li>
+                <li class="breadcrumb-item"><a href="/list">房产列表</a></li>
+                <li class="breadcrumb-item active">房源详情</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container mb-5">
+    {{if .Property}}
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Title and Badges -->
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h1 class="h2 mb-2">{{.Property.Title}}</h1>
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-building"></i> {{.Property.Source}} |
+                        <i class="bi bi-tag"></i> {{if eq .Property.ListingType "rent"}}出租{{else}}出售{{end}}
+                    </p>
+                </div>
+                <span class="badge bg-{{if eq .Property.Source "suumo"}}primary{{else if eq .Property.Source "homes"}}success{{else}}warning{{end}} fs-6">
+                    {{.Property.Source}}
+                </span>
+            </div>
+
+            <!-- Price -->
+            <div class="card mb-4 border-primary">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="text-primary mb-0">
+                                {{if eq .Property.ListingType "rent"}}
+                                    {{printf "%.1f" (div .Property.Price 10000)}} 万円/月
+                                {{else}}
+                                    {{printf "%.0f" (div .Property.Price 10000)}} 万円
+                                {{end}}
+                            </h2>
+                            <p class="text-muted small mb-0">{{.Property.PriceDisplay}}</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{{.Property.DetailURL}}" target="_blank" class="btn btn-primary">
+                                <i class="bi bi-arrow-up-right"></i> 查看原网站
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Gallery -->
+            {{if .Property.ImageURLs}}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-images"></i> 房源图片</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        {{range $i, $url := .Property.ImageURLs}}
+                        {{if lt $i 6}}
+                        <div class="col-md-4">
+                            <img src="{{$url}}" alt="房源图片 {{$i}}" class="img-fluid rounded">
+                        </div>
+                        {{end}}
+                        {{end}}
+                    </div>
+                    {{if gt (len .Property.ImageURLs) 6}}
+                    <p class="text-muted small mt-2">还有 {{sub (len .Property.ImageURLs) 6}} 张图片...</p>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
+
+            <!-- Property Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> 房源详情</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {{if .Property.Address}}
+                        <div class="col-md-6">
+                            <label class="small text-muted">地址</label>
+                            <p class="mb-0"><i class="bi bi-geo-alt"></i> {{.Property.Address}}</p>
+                        </div>
+                        {{end}}
+
+                        {{if gt .Property.Area 0}}
+                        <div class="col-md-6">
+                            <label class="small text-muted">面积</label>
+                            <p class="mb-0"><i class="bi bi-aspect-ratio"></i> {{printf "%.2f" .Property.Area}} ㎡</p>
+                        </div>
+                        {{end}}
+
+                        {{if .Property.Layout}}
+                        <div class="col-md-6">
+                            <label class="small text-muted">房型</label>
+                            <p class="mb-0"><i class="bi bi-house"></i> {{.Property.Layout}}</p>
+                        </div>
+                        {{end}}
+
+                        {{if .Property.Floor}}
+                        <div class="col-md-6">
+                            <label class="small text-muted">楼层</label>
+                            <p class="mb-0"><i class="bi bi-building"></i> {{.Property.Floor}}</p>
+                        </div>
+                        {{end}}
+
+                        {{if .Property.BuildingType}}
+                        <div class="col-md-6">
+                            <label class="small text-muted">建筑类型</label>
+                            <p class="mb-0"><i class="bi bi-building"></i> {{.Property.BuildingType}}</p>
+                        </div>
+                        {{end}}
+
+                        {{if gt .Property.ConstructionYear 0}}
+                        <div class="col-md-6">
+                            <label class="small text-muted">建造年份</label>
+                            <p class="mb-0"><i class="bi bi-calendar"></i> {{.Property.ConstructionYear}} 年</p>
+                        </div>
+                        {{end}}
+
+                        {{if .Property.StationName}}
+                        <div class="col-md-6">
+                            <label class="small text-muted">最近车站</label>
+                            <p class="mb-0">
+                                <i class="bi bi-train"></i> {{.Property.StationName}}
+                                {{if gt .Property.WalkingMinutes 0}}
+                                徒步 {{.Property.WalkingMinutes}} 分钟
+                                {{end}}
+                            </p>
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            {{if or .Property.ContactName .Property.ContactPhone}}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-person"></i> 联系方式</h5>
+                </div>
+                <div class="card-body">
+                    {{if .Property.ContactName}}
+                    <div class="mb-2">
+                        <label class="small text-muted">联系人</label>
+                        <p class="mb-0">{{.Property.ContactName}}</p>
+                    </div>
+                    {{end}}
+
+                    {{if .Property.ContactPhone}}
+                    <div class="mb-2">
+                        <label class="small text-muted">电话</label>
+                        <p class="mb-0">
+                            <i class="bi bi-telephone"></i>
+                            <a href="tel:{{.Property.ContactPhone}}" class="text-decoration-none">
+                                {{.Property.ContactPhone}}
+                            </a>
+                        </p>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
+
+            <!-- Metadata -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> 数据信息</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row small">
+                        <div class="col-md-6">
+                            <p class="mb-1">
+                                <span class="text-muted">房源ID:</span> {{.Property.PropertyID}}
+                            </p>
+                            <p class="mb-1">
+                                <span class="text-muted">爬取时间:</span> {{.Property.ScrapedAt.Format "2006-01-02 15:04:05"}}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1">
+                                <span class="text-muted">更新时间:</span> {{.Property.UpdatedAt.Format "2006-01-02 15:04:05"}}
+                            </p>
+                            {{if .Property.ValidUntil}}
+                            <p class="mb-1">
+                                <span class="text-muted">有效期至:</span> {{.Property.ValidUntil.Format "2006-01-02"}}
+                            </p>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">快捷操作</h5>
+                    <div class="d-grid gap-2">
+                        <a href="{{.Property.DetailURL}}" target="_blank" class="btn btn-primary">
+                            <i class="bi bi-arrow-up-right"></i> 查看原网站
+                        </a>
+                        <button class="btn btn-outline-secondary" onclick="shareProperty()">
+                            <i class="bi bi-share"></i> 分享房源
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Placeholder -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title mb-3"><i class="bi bi-map"></i> 地图位置</h5>
+                    <div class="bg-light rounded" style="height: 200px; display: flex; align-items: center; justify-content: center;">
+                        <p class="text-muted mb-0">地图功能开发中</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Similar Properties -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">附近房源</h5>
+                    <p class="text-muted small">此功能开发中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{else}}
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle"></i> 未找到该房源
+    </div>
+    {{end}}
+</div>
+
+<script>
+function shareProperty() {
+    const url = window.location.href;
+    if (navigator.share) {
+        navigator.share({
+            title: '{{.Property.Title}}',
+            url: url
+        });
+    } else {
+        navigator.clipboard.writeText(url);
+        alert('链接已复制到剪贴板');
+    }
+}
+</script>
+{{end}}

@@ -1,0 +1,231 @@
+{{define "list.html"}}
+{{template "base" .}}
+{{end}}
+
+{{define "content"}}
+<div class="bg-light py-3 mb-4">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/">首页</a></li>
+                <li class="breadcrumb-item active">房产列表</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="bi bi-funnel-fill"></i> 筛选条件</h6>
+                </div>
+                <div class="card-body">
+                    <form action="/list" method="GET" id="filterForm">
+                        <div class="mb-3">
+                            <label class="form-label small">房源来源</label>
+                            <select class="form-select form-select-sm" name="source">
+                                <option value="">全部</option>
+                                <option value="suumo" {{if eq .Filters.Source "suumo"}}selected{{end}}>SUUMO</option>
+                                <option value="homes" {{if eq .Filters.Source "homes"}}selected{{end}}>HOMES</option>
+                                <option value="athome" {{if eq .Filters.Source "athome"}}selected{{end}}>at-home</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small">房源类型</label>
+                            <select class="form-select form-select-sm" name="type">
+                                <option value="">全部</option>
+                                <option value="rent" {{if eq .Filters.ListingType "rent"}}selected{{end}}>出租</option>
+                                <option value="sale" {{if eq .Filters.ListingType "sale"}}selected{{end}}>出售</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small">价格范围 (万円)</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="number" class="form-control form-control-sm" name="min_price"
+                                           value="{{.Filters.MinPrice}}" placeholder="最低">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" class="form-control form-control-sm" name="max_price"
+                                           value="{{.Filters.MaxPrice}}" placeholder="最高">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small">面积范围 (㎡)</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="number" class="form-control form-control-sm" name="min_area"
+                                           value="{{if gt .Filters.MinArea 0}}{{.Filters.MinArea}}{{end}}" placeholder="最低">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" class="form-control form-control-sm" name="max_area"
+                                           value="{{if gt .Filters.MaxArea 0}}{{.Filters.MaxArea}}{{end}}" placeholder="最高">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small">户型</label>
+                            <input type="text" class="form-control form-control-sm" name="layout"
+                                   value="{{.Filters.Layout}}" placeholder="例: 1LDK, 2DK">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small">车站名</label>
+                            <input type="text" class="form-control form-control-sm" name="station"
+                                   value="{{.Filters.StationName}}" placeholder="例: 名古屋駅">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-sm w-100">
+                            <i class="bi bi-search"></i> 搜索
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Statistics Card -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-bar-chart"></i> 数据统计</h6>
+                </div>
+                <div class="card-body">
+                    {{range .Stats}}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="small">{{.Source}} ({{.ListingType}})</span>
+                        <span class="badge bg-secondary">{{.TotalCount}}套</span>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+
+        <!-- Property List -->
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h4 class="mb-0">房产列表</h4>
+                    <span class="text-muted">共 {{.TotalCount}} 套房源</span>
+                </div>
+            </div>
+
+            {{if .Properties}}
+            <div class="row g-3">
+                {{range .Properties}}
+                <div class="col-md-6">
+                    <div class="card property-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex">
+                                <!-- Image -->
+                                {{if .ImageURLs}}
+                                <div class="property-image me-3">
+                                    <img src="{{index .ImageURLs 0}}" alt="{{.Title}}" class="img-fluid rounded">
+                                </div>
+                                {{else}}
+                                <div class="property-image me-3 bg-light rounded d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-image text-muted fs-1"></i>
+                                </div>
+                                {{end}}
+
+                                <!-- Content -->
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="card-title mb-0">
+                                            <a href="/detail/{{.ID}}" class="text-decoration-none">
+                                                {{.Title}}
+                                            </a>
+                                        </h5>
+                                        <span class="badge bg-{{if eq .Source "suumo"}}primary{{else if eq .Source "homes"}}success{{else}}warning{{end}}">
+                                            {{.Source}}
+                                        </span>
+                                    </div>
+
+                                    <p class="card-text small">
+                                        <i class="bi bi-geo-alt"></i> {{.Address}}
+                                    </p>
+
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <span class="badge bg-light text-dark">
+                                                <i class="bi bi-house"></i> {{.Layout}}
+                                            </span>
+                                        </div>
+                                        <div class="col-6">
+                                            <span class="badge bg-light text-dark">
+                                                <i class="bi bi-aspect-ratio"></i> {{printf "%.1f" .Area}}㎡
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {{if .StationName}}
+                                    <p class="card-text small text-muted mb-2">
+                                        <i class="bi bi-train"></i> {{.StationName}}
+                                        {{if gt .WalkingMinutes 0}}
+                                        徒步{{.WalkingMinutes}}分
+                                        {{end}}
+                                    </p>
+                                    {{end}}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="text-primary fw-bold">
+                                    {{if eq .ListingType "rent"}}
+                                        {{printf "%.1f" (div .Price 10000)}}万円/月
+                                    {{else}}
+                                        {{printf "%.0f" (div .Price 10000)}}万円
+                                    {{end}}
+                                </div>
+                                <a href="{{.DetailURL}}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    查看详情 <i class="bi bi-arrow-up-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+
+            <!-- Pagination -->
+            {{if gt .TotalPages 1}}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {{if gt .CurrentPage 1}}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{sub .CurrentPage 1}}">上一页</a>
+                    </li>
+                    {{end}}
+
+                    {{range $i := iterate 1 .TotalPages}}
+                    {{if le $i 5}}
+                    <li class="page-item {{if eq $.CurrentPage $i}}active{{end}}">
+                        <a class="page-link" href="?page={{$i}}">{{$i}}</a>
+                    </li>
+                    {{end}}
+                    {{end}}
+
+                    {{if lt .CurrentPage .TotalPages}}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{add .CurrentPage 1}}">下一页</a>
+                    </li>
+                    {{end}}
+                </ul>
+            </nav>
+            {{end}}
+
+            {{else}}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> 没有找到符合条件的房源，请调整筛选条件。
+            </div>
+            {{end}}
+        </div>
+    </div>
+</div>
+{{end}}

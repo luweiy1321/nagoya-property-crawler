@@ -1,0 +1,249 @@
+{{define "home.html"}}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-building"></i> 名古屋房产信息
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/"><i class="bi bi-house"></i> 首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/list"><i class="bi bi-list-ul"></i> 房产列表</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-download"></i> 下载数据
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/download?format=csv">CSV 格式</a></li>
+                            <li><a class="dropdown-item" href="/download?format=json">JSON 格式</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="bg-primary text-white py-5 mb-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="display-4 fw-bold">名古屋房产信息</h1>
+                    <p class="lead">日本爱知县名古屋市房产信息聚合平台</p>
+                    <p class="mb-0">
+                        <i class="bi bi-building"></i> SUUMO |
+                        <i class="bi bi-building"></i> HOMES |
+                        <i class="bi bi-building"></i> at-home
+                    </p>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <div class="display-6 fw-bold">{{.TotalCount}}</div>
+                    <div>房源总数</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        <div class="row">
+            <!-- Filter Form -->
+            <div class="col-lg-4 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-funnel"></i> 筛选条件</h5>
+                    </div>
+                    <div class="card-body">
+                        <form action="/list" method="GET" id="filterForm">
+                            <div class="mb-3">
+                                <label class="form-label">房源来源</label>
+                                <select class="form-select" name="source">
+                                    <option value="">全部</option>
+                                    <option value="suumo">SUUMO</option>
+                                    <option value="homes">HOMES</option>
+                                    <option value="athome">at-home</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">房源类型</label>
+                                <select class="form-select" name="type">
+                                    <option value="">全部</option>
+                                    <option value="rent">出租</option>
+                                    <option value="sale">出售</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">价格范围 (日元)</label>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <input type="number" class="form-control" name="min_price" placeholder="最低">
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="number" class="form-control" name="max_price" placeholder="最高">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">面积范围 (㎡)</label>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <input type="number" class="form-control" name="min_area" placeholder="最低">
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="number" class="form-control" name="max_area" placeholder="最高">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">房型</label>
+                                <select class="form-select" name="layout">
+                                    <option value="">全部</option>
+                                    <option value="1R">1R</option>
+                                    <option value="1K">1K</option>
+                                    <option value="1DK">1DK</option>
+                                    <option value="1LDK">1LDK</option>
+                                    <option value="2K">2K</option>
+                                    <option value="2DK">2DK</option>
+                                    <option value="2LDK">2LDK</option>
+                                    <option value="3K">3K</option>
+                                    <option value="3DK">3DK</option>
+                                    <option value="3LDK">3LDK</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">最近车站</label>
+                                <input type="text" class="form-control" name="station" placeholder="站名">
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search"></i> 搜索
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="col-lg-8">
+                <h3 class="mb-3">房源统计</h3>
+                <div class="row g-3">
+                    {{range .Stats}}
+                    <div class="col-md-6">
+                        <div class="card stat-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="card-title text-uppercase">{{.Source}} - {{.ListingType}}</h6>
+                                        <h2 class="display-6 fw-bold text-primary">{{.TotalCount}}</h2>
+                                        <p class="text-muted mb-1">房源数量</p>
+                                    </div>
+                                    <div class="text-end">
+                                        {{if gt .AvgPrice 0}}
+                                        <p class="mb-1"><strong>均价:</strong></p>
+                                        <p class="text-success fs-5 mb-0">
+                                            {{if eq .ListingType "sale"}}
+                                                {{printf "%.0f" (div .AvgPrice 10000)}} 万円
+                                            {{else}}
+                                                {{printf "%.1f" (div .AvgPrice 10000)}} 万円
+                                            {{end}}
+                                        </p>
+                                        {{end}}
+                                    </div>
+                                </div>
+                                {{if gt .AvgArea 0}}
+                                <hr>
+                                <div class="row text-center">
+                                    <div class="col-12">
+                                        <small class="text-muted">平均面积</small>
+                                        <div>{{printf "%.1f" .AvgArea}}㎡</div>
+                                    </div>
+                                </div>
+                                {{end}}
+                            </div>
+                        </div>
+                    </div>
+                    {{else}}
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> 暂无统计数据，请先运行爬虫获取数据。
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+
+                <!-- Quick Links -->
+                <div class="row g-3 mt-3">
+                    <div class="col-md-4">
+                        <a href="/list?type=rent" class="card text-decoration-none h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-key display-4 text-primary"></i>
+                                <h5 class="card-title mt-2">出租房源</h5>
+                                <p class="card-text text-muted">查看所有出租房源</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="/list?type=sale" class="card text-decoration-none h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-cash display-4 text-success"></i>
+                                <h5 class="card-title mt-2">出售房源</h5>
+                                <p class="card-text text-muted">查看所有出售房源</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="/download?format=csv" class="card text-decoration-none h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-download display-4 text-warning"></i>
+                                <h5 class="card-title mt-2">下载数据</h5>
+                                <p class="card-text text-muted">导出 CSV/JSON 格式</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-light mt-5 py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>名古屋房产信息爬虫</h5>
+                    <p class="text-muted">数据来源：SUUMO、HOMES、at-home</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="text-muted mb-0">&copy; {{.CurrentYear}} Nagoya Property Crawler</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
+{{end}}
