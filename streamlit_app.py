@@ -57,10 +57,9 @@ def load_data():
                 construction_year,
                 station_name,
                 walking_minutes,
-                detail_url,
-                created_at
+                detail_url
             FROM properties
-            ORDER BY created_at DESC
+            ORDER BY id DESC
         """)
         data = cur.fetchall()
         cur.close()
@@ -90,7 +89,6 @@ def get_stats():
         conn.close()
         return pd.DataFrame(stats)
     except Exception as e:
-        st.error(f"统计数据获取失败: {e}")
         return pd.DataFrame()
 
 # Main app
@@ -108,21 +106,20 @@ def main():
 
         **本地运行:**
         ```bash
+        pip install -r requirements.txt
         streamlit run streamlit_app.py
         ```
 
         **部署到Streamlit Cloud:**
-        需要配置云端数据库连接信息，请设置以下Secrets:
-        - `DB_HOST`
-        - `DB_PORT`
-        - `DB_USER`
-        - `DB_PASSWORD`
-        - `DB_NAME`
+        需要配置云端数据库连接信息，请在Streamlit Cloud设置中添加以下Secrets:
 
-        推荐使用免费云端数据库:
-        - [Supabase](https://supabase.com) - 免费500MB
-        - [Neon](https://neon.tech) - 免费无限制
-        - [Railway](https://railway.app) - 免费$5/月额度
+        ```toml
+        DB_HOST="ep-floral-cherry-a1xz7gdk.ap-southeast-1.aws.neon.tech"
+        DB_PORT="5432"
+        DB_USER="neondb_owner"
+        DB_PASSWORD="npg_UBEigRoV6Dk5"
+        DB_NAME="neondb"
+        ```
         """)
         return
 
@@ -144,7 +141,7 @@ def main():
 
     # Price range
     min_price = 0
-    max_price = float(df['price'].max()) if df['price'].max() > 0 else 50
+    max_price = float(df['price'].max()) if df['price'].max() > 0 else 100
     price_range = st.sidebar.slider("价格范围 (万円)", min_price, max_price, (min_price, max_price))
 
     # Apply filters
@@ -185,14 +182,16 @@ def main():
     with col1:
         st.subheader("按数据源分布")
         source_counts = filtered_df['source'].value_counts()
-        fig_source = px.pie(values=source_counts.values, names=source_counts.index, title="数据源分布")
-        st.plotly_chart(fig_source, use_container_width=True)
+        if len(source_counts) > 0:
+            fig_source = px.pie(values=source_counts.values, names=source_counts.index, title="数据源分布")
+            st.plotly_chart(fig_source, use_container_width=True)
 
     with col2:
         st.subheader("面积分布")
         area_data = filtered_df[filtered_df['area'] > 0]['area']
-        fig_area = px.histogram(area_data, bins=30, title="面积分布 (㎡)")
-        st.plotly_chart(fig_area, use_container_width=True)
+        if len(area_data) > 0:
+            fig_area = px.histogram(area_data, bins=20, title="面积分布 (㎡)")
+            st.plotly_chart(fig_area, use_container_width=True)
 
     # Property list
     st.subheader(f"房源列表 ({len(filtered_df)} 条)")
@@ -207,14 +206,24 @@ def main():
             cols = st.columns(cols_per_row)
             for j, (_, row) in enumerate(filtered_df.iloc[i:i+cols_per_row].iterrows()):
                 with cols[j]:
+                    title = row['title'] if pd.notna(row['title']) and row['title'] else '无标题'
+                    address = row['address'] if pd.notna(row['address']) and row['address'] else '地址未知'
+                    source = row['source'] if pd.notna(row['source']) else 'N/A'
+                    listing_type = '出租' if row['listing_type'] == 'rent' else '出售'
+                    area = f"{row['area']:.2f}㎡" if pd.notna(row['area']) and row['area'] > 0 else 'N/A'
+                    price = row['price_display'] if pd.notna(row['price_display']) and row['price_display'] else 'N/A'
+                    layout = row['layout'] if pd.notna(row['layout']) and row['layout'] else 'N/A'
+                    floor = row['floor'] if pd.notna(row['floor']) and row['floor'] else 'N/A'
+                    detail_url = row['detail_url'] if pd.notna(row['detail_url']) else ''
+
                     st.markdown(f"""
-                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 10px; background: white;">
-                        <h4 style="margin: 0 0 10px 0;">{row['title'] or '无标题'}</h4>
-                        <p style="margin: 5px 0; color: #666;">📍 {row['address'] or '地址未知'}</p>
-                        <p style="margin: 5px 0;">🏢 {row['source']} | {'出租' if row['listing_type'] == 'rent' else '出售'}</p>
-                        <p style="margin: 5px 0;">📏 {row['area']:.2f}㎡  💰 {row['price_display'] or 'N/A'}</p>
-                        <p style="margin: 5px 0;">🚪 {row['layout'] or 'N/A'}  🏗️ {row['floor'] or 'N/A'}</p>
-                        {f'<a href="{row["detail_url"]}" target="_blank" style="color: #0066cc;">查看详情 →</a>' if row['detail_url'] else ''}
+                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 10px; background: white; margin-bottom: 10px;">
+                        <h4 style="margin: 0 0 10px 0; font-size: 16px;">{title[:50]}...</h4>
+                        <p style="margin: 5px 0; color: #666; font-size: 14px;">📍 {address[:30]}...</p>
+                        <p style="margin: 5px 0; font-size: 14px;">🏢 {source} | {listing_type}</p>
+                        <p style="margin: 5px 0; font-size: 14px;">📏 {area}  💰 {price}</p>
+                        <p style="margin: 5px 0; font-size: 14px;">🚪 {layout}  🏗️ {floor}</p>
+                        {f'<a href="{detail_url}" target="_blank" style="color: #0066cc; font-size: 14px;">查看详情 →</a>' if detail_url else ''}
                     </div>
                     """, unsafe_allow_html=True)
     else:
@@ -224,6 +233,7 @@ def main():
             'layout', 'floor', 'station_name', 'walking_minutes'
         ]].copy()
         display_df.columns = ['数据源', '标题', '地址', '面积(㎡)', '价格', '户型', '楼层', '车站', '步行(分)']
+        display_df = display_df.fillna('N/A')
         st.dataframe(display_df, use_container_width=True, height=400)
 
     # Detail view on click
@@ -232,27 +242,32 @@ def main():
         selected_id = st.selectbox(
             "选择房源查看详情",
             options=filtered_df['id'].tolist(),
-            format_func=lambda x: f"{filtered_df[filtered_df['id']==x]['title'].values[0] or '无标题'} - {filtered_df[filtered_df['id']==x]['source'].values[0]}"
+            format_func=lambda x: f"{filtered_df[filtered_df['id']==x]['title'].values[0] if pd.notna(filtered_df[filtered_df['id']==x]['title'].values[0]) else '无标题'} - {filtered_df[filtered_df['id']==x]['source'].values[0]}"
         )
 
         if selected_id:
             prop = filtered_df[filtered_df['id'] == selected_id].iloc[0]
+            title = prop['title'] if pd.notna(prop['title']) else '无标题'
+            address = prop['address'] if pd.notna(prop['address']) else '未知'
+            price = prop['price_display'] if pd.notna(prop['price_display']) else 'N/A'
+            area = f"{prop['area']:.2f}㎡" if pd.notna(prop['area']) and prop['area'] > 0 else 'N/A'
+
             st.markdown(f"""
             <div style="border: 1px solid #ddd; padding: 20px; border-radius: 10px; background: #f9f9f9;">
-                <h2>{prop['title'] or '无标题'}</h2>
+                <h2>{title}</h2>
                 <p><strong>数据源:</strong> {prop['source']}</p>
                 <p><strong>房源ID:</strong> {prop['property_id']}</p>
                 <p><strong>类型:</strong> {'出租' if prop['listing_type'] == 'rent' else '出售'}</p>
-                <p><strong>地址:</strong> {prop['address'] or '未知'}</p>
-                <p><strong>价格:</strong> {prop['price_display'] or 'N/A'}</p>
-                <p><strong>面积:</strong> {prop['area']:.2f}㎡</p>
-                <p><strong>户型:</strong> {prop['layout'] or 'N/A'}</p>
-                <p><strong>楼层:</strong> {prop['floor'] or 'N/A'}</p>
-                <p><strong>建筑类型:</strong> {prop['building_type'] or 'N/A'}</p>
-                <p><strong>建造年份:</strong> {prop['construction_year'] or 'N/A'}</p>
-                <p><strong>最近车站:</strong> {prop['station_name'] or 'N/A'}</p>
-                <p><strong>步行时间:</strong> {prop['walking_minutes'] or 'N/A'} 分钟</p>
-                {f'<p><strong>详情链接:</strong> <a href="{prop["detail_url"]}" target="_blank">查看</a></p>' if prop['detail_url'] else ''}
+                <p><strong>地址:</strong> {address}</p>
+                <p><strong>价格:</strong> {price}</p>
+                <p><strong>面积:</strong> {area}</p>
+                <p><strong>户型:</strong> {prop['layout'] if pd.notna(prop['layout']) else 'N/A'}</p>
+                <p><strong>楼层:</strong> {prop['floor'] if pd.notna(prop['floor']) else 'N/A'}</p>
+                <p><strong>建筑类型:</strong> {prop['building_type'] if pd.notna(prop['building_type']) else 'N/A'}</p>
+                <p><strong>建造年份:</strong> {prop['construction_year'] if pd.notna(prop['construction_year']) else 'N/A'}</p>
+                <p><strong>最近车站:</strong> {prop['station_name'] if pd.notna(prop['station_name']) else 'N/A'}</p>
+                <p><strong>步行时间:</strong> {prop['walking_minutes'] if pd.notna(prop['walking_minutes']) else 'N/A'} 分钟</p>
+                {f'<p><strong>详情链接:</strong> <a href="{prop["detail_url"]}" target="_blank">查看</a></p>' if pd.notna(prop['detail_url']) and prop['detail_url'] else ''}
             </div>
             """, unsafe_allow_html=True)
 
