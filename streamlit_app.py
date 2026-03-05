@@ -12,9 +12,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# Database connection - support both local and cloud
+# Database connection
 def get_connection():
-    # Try environment variables first (for Streamlit Cloud)
     if 'DB_HOST' in os.environ:
         return psycopg2.connect(
             host=os.environ.get('DB_HOST'),
@@ -23,7 +22,6 @@ def get_connection():
             password=os.environ.get('DB_PASSWORD'),
             dbname=os.environ.get('DB_NAME')
         )
-    # Fallback to local database
     else:
         return psycopg2.connect(
             host="localhost",
@@ -39,27 +37,11 @@ def load_data():
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-
         cur.execute("""
-            SELECT
-                id,
-                source,
-                property_id,
-                listing_type,
-                title,
-                price,
-                price_display,
-                address,
-                area,
-                floor,
-                layout,
-                building_type,
-                construction_year,
-                station_name,
-                walking_minutes,
-                detail_url
-            FROM properties
-            ORDER BY id DESC
+            SELECT id, source, property_id, listing_type, title, price,
+                   price_display, address, area, floor, layout, building_type,
+                   construction_year, station_name, walking_minutes, detail_url
+            FROM properties ORDER BY id DESC
         """)
         data = cur.fetchall()
         cur.close()
@@ -73,16 +55,12 @@ def get_stats():
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-
         cur.execute("""
-            SELECT
-                source,
-                COUNT(*) as count,
-                COUNT(CASE WHEN title != '' AND address != '' AND area > 0 THEN 1 END) as complete_count,
-                AVG(CASE WHEN area > 0 THEN area END) as avg_area,
-                AVG(CASE WHEN price > 0 THEN price END) as avg_price
-            FROM properties
-            GROUP BY source
+            SELECT source, COUNT(*) as count,
+                   COUNT(CASE WHEN title != '' AND address != '' AND area > 0 THEN 1 END) as complete_count,
+                   AVG(CASE WHEN area > 0 THEN area END) as avg_area,
+                   AVG(CASE WHEN price > 0 THEN price END) as avg_price
+            FROM properties GROUP BY source
         """)
         stats = cur.fetchall()
         cur.close()
@@ -91,11 +69,21 @@ def get_stats():
     except Exception as e:
         return pd.DataFrame()
 
+def safe_str(val):
+    return str(val) if pd.notna(val) else ""
+
+def clean_display(val, max_len=50):
+    if pd.notna(val) and val != "":
+        s = str(val)
+        if len(s) > max_len:
+            return s[:max_len] + "..."
+        return s
+    return "N/A"
+
 # Main app
 def main():
     st.title("🏠 名古屋房产信息爬虫系统")
 
-    # Load data
     with st.spinner("加载数据..."):
         df = load_data()
         stats = get_stats()
@@ -104,14 +92,7 @@ def main():
         st.error("""
         ### 无法连接到数据库
 
-        **本地运行:**
-        ```bash
-        pip install -r requirements.txt
-        streamlit run streamlit_app.py
-        ```
-
-        **部署到Streamlit Cloud:**
-        需要配置云端数据库连接信息，请在Streamlit Cloud设置中添加以下Secrets:
+        请在Streamlit Cloud设置中添加以下Secrets:
 
         ```toml
         DB_HOST="ep-floral-cherry-a1xz7gdk.ap-southeast-1.aws.neon.tech"
@@ -126,20 +107,16 @@ def main():
     # Sidebar filters
     st.sidebar.header("筛选条件")
 
-    # Source filter
     all_sources = ['全部'] + list(df['source'].unique())
     source_filter = st.sidebar.selectbox("数据源", all_sources)
 
-    # Listing type filter
     all_types = ['全部'] + list(df['listing_type'].dropna().unique())
     type_filter = st.sidebar.selectbox("房源类型", all_types)
 
-    # Area range
     min_area = float(df['area'].min()) if df['area'].min() > 0 else 0
     max_area = float(df['area'].max()) if df['area'].max() > 0 else 200
     area_range = st.sidebar.slider("面积范围 (㎡)", min_area, max_area, (min_area, max_area))
 
-    # Price range
     min_price = 0
     max_price = float(df['price'].max()) if df['price'].max() > 0 else 100
     price_range = st.sidebar.slider("价格范围 (万円)", min_price, max_price, (min_price, max_price))
@@ -199,35 +176,8 @@ def main():
     # Display options
     display_option = st.radio("显示方式", ["卡片", "表格"], horizontal=True)
 
-    if display_option == "卡片":
-        # Card view
-        cols_per_row = 3
-        for i in range(0, len(filtered_df), cols_per_row):
-            cols = st.columns(cols_per_row)
-            for j, (_, row) in enumerate(filtered_df.iloc[i:i+cols_per_row].iterrows()):
-                with cols[j]:
-                    title = row['title'] if pd.notna(row['title']) and row['title'] else '无标题'
-                    address = row['address'] if pd.notna(row['address']) and row['address'] else '地址未知'
-                    source = row['source'] if pd.notna(row['source']) else 'N/A'
-                    listing_type = '出租' if row['listing_type'] == 'rent' else '出售'
-                    area = f"{row['area']:.2f}㎡" if pd.notna(row['area']) and row['area'] > 0 else 'N/A'
-                    price = row['price_display'] if pd.notna(row['price_display']) and row['price_display'] else 'N/A'
-                    layout = row['layout'] if pd.notna(row['layout']) and row['layout'] else 'N/A'
-                    floor = row['floor'] if pd.notna(row['floor']) and row['floor'] else 'N/A'
-                    detail_url = row['detail_url'] if pd.notna(row['detail_url']) else ''
-
-                    st.markdown(f"""
-                    <div style="border: 1px solid #ddd; padding: 15px; border-radius: 10px; background: white; margin-bottom: 10px;">
-                        <h4 style="margin: 0 0 10px 0; font-size: 16px;">{title[:50]}...</h4>
-                        <p style="margin: 5px 0; color: #666; font-size: 14px;">📍 {address[:30]}...</p>
-                        <p style="margin: 5px 0; font-size: 14px;">🏢 {source} | {listing_type}</p>
-                        <p style="margin: 5px 0; font-size: 14px;">📏 {area}  💰 {price}</p>
-                        <p style="margin: 5px 0; font-size: 14px;">🚪 {layout}  🏗️ {floor}</p>
-                        {f'<a href="{detail_url}" target="_blank" style="color: #0066cc; font-size: 14px;">查看详情 →</a>' if detail_url else ''}
-                    </div>
-                    """, unsafe_allow_html=True)
-    else:
-        # Table view
+    if display_option == "表格":
+        # Table view (safer, no custom HTML)
         display_df = filtered_df[[
             'source', 'title', 'address', 'area', 'price_display',
             'layout', 'floor', 'station_name', 'walking_minutes'
@@ -236,40 +186,59 @@ def main():
         display_df = display_df.fillna('N/A')
         st.dataframe(display_df, use_container_width=True, height=400)
 
-    # Detail view on click
+    else:
+        # Card view - using st.container instead of custom HTML
+        for _, row in filtered_df.iterrows():
+            with st.container():
+                col1, col2 = st.columns([3, 1])
+
+                with col1:
+                    title = clean_display(row['title'], 60)
+                    st.write(f"**{title}**")
+                    st.caption(f"📍 {clean_display(row['address'], 40)}")
+                    st.write(f"🏢 {row['source']} | {'出租' if row['listing_type'] == 'rent' else '出售'}")
+                    st.write(f"📏 {row['area']:.2f}㎡  💰 {clean_display(row['price_display'])}")
+
+                with col2:
+                    if pd.notna(row['detail_url']) and row['detail_url']:
+                        st.link_button("查看详情", row['detail_url'])
+
+                st.divider()
+
+    # Detail view
     if len(filtered_df) > 0:
         st.subheader("房源详情")
-        selected_id = st.selectbox(
+        selected_idx = st.selectbox(
             "选择房源查看详情",
-            options=filtered_df['id'].tolist(),
-            format_func=lambda x: f"{filtered_df[filtered_df['id']==x]['title'].values[0] if pd.notna(filtered_df[filtered_df['id']==x]['title'].values[0]) else '无标题'} - {filtered_df[filtered_df['id']==x]['source'].values[0]}"
+            options=range(len(filtered_df)),
+            format_func=lambda i: f"{clean_display(filtered_df.iloc[i]['title'], 40)} - {filtered_df.iloc[i]['source']}"
         )
 
-        if selected_id:
-            prop = filtered_df[filtered_df['id'] == selected_id].iloc[0]
-            title = prop['title'] if pd.notna(prop['title']) else '无标题'
-            address = prop['address'] if pd.notna(prop['address']) else '未知'
-            price = prop['price_display'] if pd.notna(prop['price_display']) else 'N/A'
-            area = f"{prop['area']:.2f}㎡" if pd.notna(prop['area']) and prop['area'] > 0 else 'N/A'
+        if selected_idx is not None:
+            prop = filtered_df.iloc[selected_idx]
 
-            st.markdown(f"""
-            <div style="border: 1px solid #ddd; padding: 20px; border-radius: 10px; background: #f9f9f9;">
-                <h2>{title}</h2>
-                <p><strong>数据源:</strong> {prop['source']}</p>
-                <p><strong>房源ID:</strong> {prop['property_id']}</p>
-                <p><strong>类型:</strong> {'出租' if prop['listing_type'] == 'rent' else '出售'}</p>
-                <p><strong>地址:</strong> {address}</p>
-                <p><strong>价格:</strong> {price}</p>
-                <p><strong>面积:</strong> {area}</p>
-                <p><strong>户型:</strong> {prop['layout'] if pd.notna(prop['layout']) else 'N/A'}</p>
-                <p><strong>楼层:</strong> {prop['floor'] if pd.notna(prop['floor']) else 'N/A'}</p>
-                <p><strong>建筑类型:</strong> {prop['building_type'] if pd.notna(prop['building_type']) else 'N/A'}</p>
-                <p><strong>建造年份:</strong> {prop['construction_year'] if pd.notna(prop['construction_year']) else 'N/A'}</p>
-                <p><strong>最近车站:</strong> {prop['station_name'] if pd.notna(prop['station_name']) else 'N/A'}</p>
-                <p><strong>步行时间:</strong> {prop['walking_minutes'] if pd.notna(prop['walking_minutes']) else 'N/A'} 分钟</p>
-                {f'<p><strong>详情链接:</strong> <a href="{prop["detail_url"]}" target="_blank">查看</a></p>' if pd.notna(prop['detail_url']) and prop['detail_url'] else ''}
-            </div>
-            """, unsafe_allow_html=True)
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.write(f"**标题**: {clean_display(prop['title'])}")
+                st.write(f"**数据源**: {prop['source']}")
+                st.write(f"**房源ID**: {prop['property_id']}")
+                st.write(f"**类型**: {'出租' if prop['listing_type'] == 'rent' else '出售'}")
+                st.write(f"**地址**: {clean_display(prop['address'])}")
+
+            with col2:
+                st.write(f"**价格**: {clean_display(prop['price_display'])}")
+                st.write(f"**面积**: {prop['area']:.2f}㎡" if pd.notna(prop['area']) and prop['area'] > 0 else "**面积**: N/A")
+                st.write(f"**户型**: {clean_display(prop['layout'])}")
+                st.write(f"**楼层**: {clean_display(prop['floor'])}")
+                st.write(f"**建筑类型**: {clean_display(prop['building_type'])}")
+
+            st.write(f"**建造年份**: {prop['construction_year']}" if pd.notna(prop['construction_year']) else "**建造年份**: N/A")
+            st.write(f"**最近车站**: {clean_display(prop['station_name'])}")
+            st.write(f"**步行时间**: {prop['walking_minutes']} 分钟" if pd.notna(prop['walking_minutes']) else "**步行时间**: N/A")
+
+            if pd.notna(prop['detail_url']) and prop['detail_url']:
+                st.link_button("查看原始链接", prop['detail_url'])
 
     # Refresh button
     if st.button("🔄 刷新数据"):
