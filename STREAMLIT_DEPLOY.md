@@ -6,38 +6,55 @@
 
 ## 🚀 部署步骤
 
-### 1. 创建云端数据库（推荐）
+### 1. 创建云端数据库（推荐使用 Neon）
 
-#### 选项A: Supabase（推荐）
-1. 访问 https://supabase.com
-2. 注册并创建新项目
-3. 进入 SQL Editor，运行 `migrations/001_init.sql` 创建表
-4. Settings > Database > 获取连接信息
+**Neon** 是推荐的免费PostgreSQL云服务：
+- ✅ 完全免费，无限制
+- ✅ 自动休眠节省资源
+- ✅ 支持分支功能
+- ✅ 低延迟（Asia区域）
 
-#### 选项B: Neon
+#### 创建 Neon 数据库：
+
 1. 访问 https://neon.tech
-2. 注册并创建新项目
-3. 在 SQL Editor 运行 `migrations/001_init.sql`
-4. 获取连接字符串
+2. 用 GitHub 账号登录
+3. 点击 "Create a project"
+4. 选择区域（推荐 Tokyo 或 Singapore）
+5. 等待项目创建完成
 
-#### 选项C: Railway
-1. 访问 https://railway.app
-2. New Project > Provision PostgreSQL
-3. 获取连接信息
+#### 创建表结构：
 
-### 2. 迁移数据
+1. 进入 Neon 项目 → "SQL Editor"
+2. 复制 `migrations/001_init.sql` 的内容
+3. 粘贴并运行
 
-从本地数据库导出数据：
+#### 导入本地数据：
+
 ```bash
-pg_dump nagoya_properties -U lw -t properties > properties_backup.sql
+# 导出本地数据
+./export_to_neon.sh
+
+# 或者手动导出
+pg_dump nagoya_properties -U lw -t properties --data-only > properties_data.sql
 ```
 
-导入到云端数据库：
-```bash
-psql "your-cloud-database-uri" < properties_backup.sql
+然后在 Neon SQL Editor 中运行 `properties_data.sql`
+
+#### 获取连接信息：
+
+在 Neon 项目 Dashboard 点击 "Connection details"，复制连接字符串，例如：
+```
+postgresql://luweiy:abc123@ep-cool-darkness-123456.us-east-2.aws.neon.tech/neondb
 ```
 
-### 3. 部署到 Streamlit Cloud
+解析为：
+- DB_HOST: `ep-cool-darkness-123456.us-east-2.aws.neon.tech`
+- DB_PORT: `5432`
+- DB_USER: `luweiy`
+- DB_PASSWORD: `abc123`
+- DB_NAME: `neondb`
+
+### 2. 部署到 Streamlit Cloud
 
 1. 访问 https://streamlit.io/cloud
 2. 点击 "New app"
